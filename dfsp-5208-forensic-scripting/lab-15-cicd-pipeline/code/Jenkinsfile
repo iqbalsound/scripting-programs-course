@@ -1,0 +1,24 @@
+pipeline {
+  agent any
+  triggers { pollSCM('H/2 * * * *') }
+  environment {
+    IMAGE = "localhost:5000/forensic-log-filter"
+    TAG = "${env.BUILD_NUMBER}"
+  }
+  stages {
+    stage('Build') { steps { sh 'docker build -t $IMAGE:$TAG .' } }
+    stage('Test') {
+      steps { sh 'docker run --rm $IMAGE:$TAG --input sample_data.csv --output /tmp/out.csv --level ERROR' }
+    }
+    stage('Scan') {
+      steps {
+        sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:<PINNED_VERSION> image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed $IMAGE:$TAG'
+      }
+    }
+    stage('Push') { steps { sh 'docker push $IMAGE:$TAG' } }
+  }
+  post {
+    success { echo 'Pipeline completed: image built, tested, scanned and pushed.' }
+    failure { echo 'Pipeline failed: check the console output.' }
+  }
+}

@@ -1,0 +1,5 @@
+resource,costUsd,level
+vm-01,72.5,WARN
+db-02,20.0,INFO
+vm-03,130.0,WARN
+bad-row,abc,WARN
